@@ -1,4 +1,4 @@
-package serializer_compress_go
+package serializer
 
 func encodeVarint(x uint64) []byte {
 	var buf [maxVarintBytes]byte

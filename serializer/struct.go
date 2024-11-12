@@ -1,4 +1,4 @@
-package serializer_compress_go
+package serializer
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package serializer_compress_go
+package serializer
 
 func encodeString(value string) ([]byte, error) {
 	size := len(value)
