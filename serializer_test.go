@@ -1,8 +1,10 @@
 package serializer_compress_go
 
 import (
+	"crypto/md5"
 	"fmt"
 	"testing"
+	"time"
 )
 
 type TestStructs []TestStruct
@@ -19,18 +21,29 @@ type Person struct {
 	Age  int    `compress:"2"`
 }
 
+func hashStr() string {
+	now := time.Now().UnixNano()
+	hasher := md5.New()
+	hasher.Write([]byte(fmt.Sprintf("%d", now)))
+	return fmt.Sprintf("%x", hasher.Sum(nil))
+}
+
 func TestNewSerializer2(t *testing.T) {
 	var testStructs TestStructs
-
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1; i++ {
 		testStruct := TestStruct{
 			ReqSize:    i,
-			QuestionId: fmt.Sprintf("1sfdkio1klmdskfmc1o%d", i),
+			QuestionId: fmt.Sprintf("%s-%d", hashStr(), i),
 			Sizes:      []int{1, 2, 3, 4, 5},
+			P: Person{
+				Name: "John",
+				Age:  30,
+			},
 		}
 		testStructs = append(testStructs, testStruct)
 	}
 
+	startTime := time.Now()
 	s := NewSerializer()
 
 	data, err := s.Encode(testStructs)
@@ -49,6 +62,8 @@ func TestNewSerializer2(t *testing.T) {
 	}
 
 	fmt.Println("Decoded data: ", target)
+
+	fmt.Println("Time taken: ", time.Since(startTime))
 }
 
 func TestNewSerializer(t *testing.T) {
