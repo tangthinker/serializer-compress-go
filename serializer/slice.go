@@ -88,6 +88,7 @@ func decodeSlice(data []byte, target any) (int, error) {
 
 	dataSize, n := decodeVarint(data)
 	data = data[n:]
+	data = data[:dataSize]
 
 	_, eleType := decodeHead(data[0])
 	data = data[1:]

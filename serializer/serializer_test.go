@@ -31,7 +31,7 @@ func hashStr() string {
 
 func TestNewSerializer2(t *testing.T) {
 	var testStructs TestStructs
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		testStruct := TestStruct{
 			ReqSize:    i,
 			QuestionId: fmt.Sprintf("%s-%d", hashStr(), i),

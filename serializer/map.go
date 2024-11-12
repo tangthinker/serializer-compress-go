@@ -105,6 +105,8 @@ func decodeMap(data []byte, target any) (int, error) {
 	dataSize, n := decodeVarint(data)
 	data = data[n:]
 
+	data = data[:dataSize]
+
 	_, keyTid := decodeHead(data[0])
 	data = data[1:]
 	_, valueTid := decodeHead(data[0])
