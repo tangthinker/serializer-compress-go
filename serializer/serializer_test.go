@@ -10,10 +10,11 @@ import (
 type TestStructs []TestStruct
 
 type TestStruct struct {
-	ReqSize    int    `compress:"1"`
-	QuestionId string `compress:"2"`
-	Sizes      []int  `compress:"3"`
-	P          Person `compress:"4"`
+	ReqSize    int            `compress:"1"`
+	QuestionId string         `compress:"2"`
+	Sizes      []int          `compress:"3"`
+	P          Person         `compress:"4"`
+	Map        map[string]int `compress:"5"`
 }
 
 type Person struct {
@@ -38,6 +39,11 @@ func TestNewSerializer2(t *testing.T) {
 			P: Person{
 				Name: "John",
 				Age:  30,
+			},
+			Map: map[string]int{
+				"key1": 1,
+				"key2": 2,
+				"key3": 3,
 			},
 		}
 		testStructs = append(testStructs, testStruct)
@@ -75,6 +81,11 @@ func TestNewSerializer(t *testing.T) {
 		P: Person{
 			Name: "John",
 			Age:  30,
+		},
+		Map: map[string]int{
+			"key1": 1,
+			"key2": 2,
+			"key3": 3,
 		},
 	}
 

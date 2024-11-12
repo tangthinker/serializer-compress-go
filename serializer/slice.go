@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-func (s *serializer) encodeSlice(source any) ([]byte, error) {
+func encodeSlice(source any) ([]byte, error) {
 	t := reflect.TypeOf(source)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -30,19 +30,11 @@ func (s *serializer) encodeSlice(source any) ([]byte, error) {
 		itemType = itemType.Elem()
 	}
 
-	switch itemType.Kind() {
-	case reflect.Struct:
-		head := encodeHead(DataHead, Struct)
-		ret = append(ret, head)
-	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Uint8, reflect.Uint32, reflect.Uint16, reflect.Uint64:
-		head := encodeHead(DataHead, VarInt)
-		ret = append(ret, head)
-	case reflect.String:
-		head := encodeHead(DataHead, String)
-		ret = append(ret, head)
-	default:
-		return nil, fmt.Errorf("serializer: unsupported type %s", itemType.Kind())
+	head, err := encodedKind2Head(DataHead, itemType.Kind())
+	if err != nil {
+		return nil, fmt.Errorf("serializer: encode error %w", err)
 	}
+	ret = append(ret, head)
 
 	length := v.Len()
 	ret = append(ret, encodeVarint(uint64(length))...)
@@ -54,7 +46,7 @@ func (s *serializer) encodeSlice(source any) ([]byte, error) {
 		}
 		switch itemType.Kind() {
 		case reflect.Struct:
-			data, err := s.encodeStruct(item.Interface())
+			data, err := encodeStruct(item.Interface())
 			if err != nil {
 				return nil, fmt.Errorf("serializer: encode error %w", err)
 			}
@@ -84,7 +76,7 @@ func (s *serializer) encodeSlice(source any) ([]byte, error) {
 	return ret, nil
 }
 
-func (s *serializer) decodeSlice(data []byte, target any) (int, error) {
+func decodeSlice(data []byte, target any) (int, error) {
 	t := reflect.TypeOf(target)
 	if t.Kind() != reflect.Ptr {
 		return 0, fmt.Errorf("CompressSerializer: invalid type %s", t.Kind())
@@ -116,7 +108,7 @@ func (s *serializer) decodeSlice(data []byte, target any) (int, error) {
 		}
 		switch eleType {
 		case Struct:
-			n, err := s.decodeStruct(data, item.Addr().Interface())
+			n, err := decodeStruct(data, item.Addr().Interface())
 			if err != nil {
 				return 0, fmt.Errorf("CompressSerializer: decode struct error %w", err)
 			}

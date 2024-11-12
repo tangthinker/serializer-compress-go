@@ -12,6 +12,7 @@ const (
 	String
 	Struct
 	Slice
+	Map
 )
 
 type Serializer interface {
@@ -43,13 +44,19 @@ func (s *serializer) Encode(source any) ([]byte, error) {
 	case reflect.Struct:
 		head := encodeHead(DataHead, Struct)
 		ret = append(ret, head)
-		data, eErr := s.encodeStruct(source)
+		data, eErr := encodeStruct(source)
 		err = eErr
 		ret = append(ret, data...)
 	case reflect.Slice:
 		head := encodeHead(DataHead, Slice)
 		ret = append(ret, head)
-		data, eErr := s.encodeSlice(source)
+		data, eErr := encodeSlice(source)
+		err = eErr
+		ret = append(ret, data...)
+	case reflect.Map:
+		head := encodeHead(DataHead, Map)
+		ret = append(ret, head)
+		data, eErr := encodeMap(source)
 		err = eErr
 		ret = append(ret, data...)
 	default:
@@ -79,13 +86,19 @@ func (s *serializer) Decode(data []byte, target any) error {
 		if t.Kind() != reflect.Struct {
 			return fmt.Errorf("serializer: invalid type %s", t.Kind())
 		}
-		_, err := s.decodeStruct(data, target)
+		_, err := decodeStruct(data, target)
 		return err
 	case Slice:
 		if t.Kind() != reflect.Slice {
 			return fmt.Errorf("serializer: invalid type %s", t.Kind())
 		}
-		_, err := s.decodeSlice(data, target)
+		_, err := decodeSlice(data, target)
+		return err
+	case Map:
+		if t.Kind() != reflect.Map {
+			return fmt.Errorf("serializer: invalid type %s", t.Kind())
+		}
+		_, err := decodeMap(data, target)
 		return err
 	default:
 		return fmt.Errorf("serializer: unsupported type %d", tId)
