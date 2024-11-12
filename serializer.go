@@ -60,6 +60,10 @@ func (s *serializer) Encode(source any) ([]byte, error) {
 }
 
 func (s *serializer) Decode(data []byte, target any) error {
+	if len(data) == 0 {
+		return nil
+	}
+
 	t := reflect.TypeOf(target)
 	if t.Kind() != reflect.Ptr {
 		return fmt.Errorf("serializer: invalid type %s", t.Kind())
