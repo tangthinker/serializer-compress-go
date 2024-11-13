@@ -9,6 +9,8 @@ const maxVarintBytes = 10
 
 const (
 	VarInt int = iota
+	VarUint
+	Float
 	String
 	Struct
 	Slice

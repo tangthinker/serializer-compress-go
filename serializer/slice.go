@@ -51,11 +51,17 @@ func encodeSlice(source any) ([]byte, error) {
 				return nil, fmt.Errorf("serializer: encode error %w", err)
 			}
 			ret = append(ret, data...)
-		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Uint8, reflect.Uint32, reflect.Uint16, reflect.Uint64:
+		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
 			data, err := encodeInt64(item.Int())
 			if err != nil {
 				return nil, fmt.Errorf("serializer: encode error %w", err)
 			}
+			ret = append(ret, data...)
+		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint:
+			data := encodeVarint(item.Uint())
+			ret = append(ret, data...)
+		case reflect.Float32, reflect.Float64:
+			data := encodeFloat64(item.Float())
 			ret = append(ret, data...)
 		case reflect.String:
 			data, err := encodeString(item.String())
@@ -129,6 +135,14 @@ func decodeSlice(data []byte, target any) (int, error) {
 			}
 			data = data[n:]
 			item.SetInt(value)
+		case VarUint:
+			value, n := decodeVarint(data)
+			data = data[n:]
+			item.SetUint(value)
+		case Float:
+			value, n := decodeFloat64(data)
+			data = data[n:]
+			item.SetFloat(value)
 		case String:
 			value, n, err := decodeString(data)
 			if err != nil {

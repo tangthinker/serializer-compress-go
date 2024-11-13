@@ -35,13 +35,23 @@ func encodeStruct(source any) ([]byte, error) {
 	for idx, field := range m {
 		fieldValue := v.FieldByName(field.Name)
 		switch field.Type.Kind() {
-		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Uint8, reflect.Uint32, reflect.Uint16, reflect.Uint64:
+		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
 			header := encodeHead(idx, VarInt)
 			ret = append(ret, header)
 			data, err := encodeInt64(fieldValue.Int())
 			if err != nil {
 				return nil, fmt.Errorf("serializer: encode error %w", err)
 			}
+			ret = append(ret, data...)
+		case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+			header := encodeHead(idx, VarUint)
+			ret = append(ret, header)
+			data := encodeVarint(fieldValue.Uint())
+			ret = append(ret, data...)
+		case reflect.Float32, reflect.Float64:
+			header := encodeHead(idx, Float)
+			ret = append(ret, header)
+			data := encodeFloat64(fieldValue.Float())
 			ret = append(ret, data...)
 		case reflect.String:
 			header := encodeHead(idx, String)
@@ -130,6 +140,14 @@ func decodeStruct(data []byte, target any) (int, error) {
 			}
 			data = data[n:]
 			reflect.ValueOf(target).Elem().FieldByName(field.Name).SetInt(value)
+		case VarUint:
+			value, n := decodeVarint(data)
+			data = data[n:]
+			reflect.ValueOf(target).Elem().FieldByName(field.Name).SetUint(value)
+		case Float:
+			value, n := decodeFloat64(data)
+			data = data[n:]
+			reflect.ValueOf(target).Elem().FieldByName(field.Name).SetFloat(value)
 		case String:
 			value, n, err := decodeString(data)
 			if err != nil {

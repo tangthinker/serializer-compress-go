@@ -10,12 +10,15 @@ import (
 type TestStructs []TestStruct
 
 type TestStruct struct {
-	ReqSize    int                `compress:"1"`
-	QuestionId string             `compress:"2"`
-	Sizes      []int              `compress:"3"`
-	P          Person             `compress:"4"`
-	Map        map[string]*Person `compress:"5"`
-	PSlice     []*Person          `compress:"6"`
+	ReqSize    int               `compress:"1"`
+	F          float64           `compress:"8"`
+	U          uint64            `compress:"9"`
+	QuestionId string            `compress:"2"`
+	Sizes      []uint64          `compress:"3"`
+	P          Person            `compress:"4"`
+	Map        map[string]Person `compress:"5"`
+	PSlice     []*Person         `compress:"6"`
+	FSlice     []float64         `compress:"7"`
 }
 
 type Person struct {
@@ -40,12 +43,12 @@ func TestNewSerializer2(t *testing.T) {
 		testStruct := TestStruct{
 			ReqSize:    i,
 			QuestionId: fmt.Sprintf("%s-%d", hashStr(), i),
-			Sizes:      []int{1, 2, 3, 4, 5},
+			Sizes:      []uint64{1, 2, 3, 4, 5},
 			P: Person{
 				Name: "John",
 				Age:  30,
 			},
-			Map: map[string]*Person{
+			Map: map[string]Person{
 				"Talomvssq-8V34gQOurW_wQTDw":  {Name: "John", Age: 30},
 				"Talomvssq-8V34gQOurW_wQTDw1": {Name: "John", Age: 30},
 			},
@@ -53,6 +56,9 @@ func TestNewSerializer2(t *testing.T) {
 				{Name: "John", Age: 30},
 				{Name: "John", Age: 30},
 			},
+			FSlice: []float64{1.1, 2.2, 3.3, 4.4, 5.5},
+			F:      1.1,
+			U:      1024,
 		}
 		testStructs = append(testStructs, testStruct)
 	}
