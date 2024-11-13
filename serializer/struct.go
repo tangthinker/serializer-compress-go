@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func (s *serializer) encodeStruct(source any) ([]byte, error) {
+func encodeStruct(source any) ([]byte, error) {
 	t := reflect.TypeOf(source)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -54,7 +54,7 @@ func (s *serializer) encodeStruct(source any) ([]byte, error) {
 		case reflect.Slice:
 			header := encodeHead(idx, Slice)
 			ret = append(ret, header)
-			data, err := s.encodeSlice(fieldValue.Interface())
+			data, err := encodeSlice(fieldValue.Interface())
 			if err != nil {
 				return nil, fmt.Errorf("serializer: encode error %w", err)
 			}
@@ -62,7 +62,15 @@ func (s *serializer) encodeStruct(source any) ([]byte, error) {
 		case reflect.Struct:
 			header := encodeHead(idx, Struct)
 			ret = append(ret, header)
-			data, err := s.encodeStruct(fieldValue.Interface())
+			data, err := encodeStruct(fieldValue.Interface())
+			if err != nil {
+				return nil, fmt.Errorf("serializer: encode error %w", err)
+			}
+			ret = append(ret, data...)
+		case reflect.Map:
+			header := encodeHead(idx, Map)
+			ret = append(ret, header)
+			data, err := encodeMap(fieldValue.Interface())
 			if err != nil {
 				return nil, fmt.Errorf("serializer: encode error %w", err)
 			}
@@ -83,7 +91,7 @@ func (s *serializer) encodeStruct(source any) ([]byte, error) {
 
 }
 
-func (s *serializer) decodeStruct(data []byte, target any) (int, error) {
+func decodeStruct(data []byte, target any) (int, error) {
 	t := reflect.TypeOf(target)
 	if t.Kind() != reflect.Ptr {
 		return 0, fmt.Errorf("CompressSerializer: invalid type %s", t.Kind())
@@ -132,13 +140,19 @@ func (s *serializer) decodeStruct(data []byte, target any) (int, error) {
 			data = data[n:]
 			reflect.ValueOf(target).Elem().FieldByName(field.Name).SetString(value)
 		case Slice:
-			n, err := s.decodeSlice(data, reflect.ValueOf(target).Elem().FieldByName(field.Name).Addr().Interface())
+			n, err := decodeSlice(data, reflect.ValueOf(target).Elem().FieldByName(field.Name).Addr().Interface())
 			if err != nil {
 				return 0, fmt.Errorf("CompressSerializer: decode error %w", err)
 			}
 			data = data[n:]
 		case Struct:
-			n, err := s.decodeStruct(data, reflect.ValueOf(target).Elem().FieldByName(field.Name).Addr().Interface())
+			n, err := decodeStruct(data, reflect.ValueOf(target).Elem().FieldByName(field.Name).Addr().Interface())
+			if err != nil {
+				return 0, fmt.Errorf("CompressSerializer: decode error %w", err)
+			}
+			data = data[n:]
+		case Map:
+			n, err := decodeMap(data, reflect.ValueOf(target).Elem().FieldByName(field.Name).Addr().Interface())
 			if err != nil {
 				return 0, fmt.Errorf("CompressSerializer: decode error %w", err)
 			}
