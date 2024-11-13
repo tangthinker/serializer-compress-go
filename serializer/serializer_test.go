@@ -10,16 +10,21 @@ import (
 type TestStructs []TestStruct
 
 type TestStruct struct {
-	ReqSize    int            `compress:"1"`
-	QuestionId string         `compress:"2"`
-	Sizes      []int          `compress:"3"`
-	P          Person         `compress:"4"`
-	Map        map[string]int `compress:"5"`
+	ReqSize    int                `compress:"1"`
+	QuestionId string             `compress:"2"`
+	Sizes      []int              `compress:"3"`
+	P          Person             `compress:"4"`
+	Map        map[string]*Person `compress:"5"`
+	PSlice     []*Person          `compress:"6"`
 }
 
 type Person struct {
 	Name string `compress:"1"`
 	Age  int    `compress:"2"`
+}
+
+func (p Person) String() string {
+	return fmt.Sprintf("Name: %s, Age: %d", p.Name, p.Age)
 }
 
 func hashStr() string {
@@ -40,10 +45,13 @@ func TestNewSerializer2(t *testing.T) {
 				Name: "John",
 				Age:  30,
 			},
-			Map: map[string]int{
-				"key1": 1,
-				"key2": 2,
-				"key3": 3,
+			Map: map[string]*Person{
+				"Talomvssq-8V34gQOurW_wQTDw":  {Name: "John", Age: 30},
+				"Talomvssq-8V34gQOurW_wQTDw1": {Name: "John", Age: 30},
+			},
+			PSlice: []*Person{
+				{Name: "John", Age: 30},
+				{Name: "John", Age: 30},
 			},
 		}
 		testStructs = append(testStructs, testStruct)
@@ -74,20 +82,7 @@ func TestNewSerializer2(t *testing.T) {
 
 func TestNewSerializer(t *testing.T) {
 
-	testStruct := TestStruct{
-		ReqSize:    10,
-		QuestionId: "1sfdkio1klmdskfmc1o",
-		Sizes:      []int{1, 2, 3, 4, 5},
-		P: Person{
-			Name: "John",
-			Age:  30,
-		},
-		Map: map[string]int{
-			"key1": 1,
-			"key2": 2,
-			"key3": 3,
-		},
-	}
+	testStruct := TestStruct{}
 
 	s := NewSerializer()
 	data, err := s.Encode(testStruct)

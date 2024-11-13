@@ -13,19 +13,26 @@ func encodeMap(m any) ([]byte, error) {
 
 	v := reflect.ValueOf(m)
 	if v.Len() == 0 {
-		return nil, nil
+		return encodeVarint(0), nil
 	}
 
 	ret := make([]byte, 0)
 
-	keyType := v.MapKeys()[0].Kind()
-	head, err := encodedKind2Head(DataHead, keyType)
+	keyType := t.Key()
+	if keyType.Kind() == reflect.Ptr {
+		keyType = keyType.Elem()
+	}
+	head, err := encodedKind2Head(DataHead, keyType.Kind())
 	if err != nil {
 		return nil, fmt.Errorf("CompressSerializer: %s", err)
 	}
 	ret = append(ret, head)
-	valueType := v.MapIndex(v.MapKeys()[0]).Kind()
-	head, err = encodedKind2Head(DataHead, valueType)
+
+	valueType := t.Elem()
+	if valueType.Kind() == reflect.Ptr {
+		valueType = valueType.Elem()
+	}
+	head, err = encodedKind2Head(DataHead, valueType.Kind())
 	if err != nil {
 		return nil, fmt.Errorf("CompressSerializer: %s", err)
 	}
@@ -80,6 +87,18 @@ func encodeMap(m any) ([]byte, error) {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			data := encodeVarint(uint64(value.Int()))
 			itemData = append(itemData, data...)
+		case reflect.Struct:
+			data, err := encodeStruct(value.Interface())
+			if err != nil {
+				return nil, fmt.Errorf("CompressSerializer: %s", err)
+			}
+			itemData = append(itemData, data...)
+		case reflect.Slice:
+			data, err := encodeSlice(value.Interface())
+			if err != nil {
+				return nil, fmt.Errorf("CompressSerializer: %s", err)
+			}
+			itemData = append(itemData, data...)
 		default:
 			return nil, fmt.Errorf("CompressSerializer: unsupported type %d", value.Kind())
 		}
@@ -104,6 +123,10 @@ func decodeMap(data []byte, target any) (int, error) {
 
 	dataSize, n := decodeVarint(data)
 	data = data[n:]
+
+	if dataSize == 0 {
+		return n, nil
+	}
 
 	data = data[:dataSize]
 
@@ -138,6 +161,18 @@ func decodeMap(data []byte, target any) (int, error) {
 
 		key := reflect.New(keyType).Elem()
 		value := reflect.New(valueType).Elem()
+
+		if keyType.Kind() == reflect.Ptr {
+			key = reflect.New(keyType.Elem()).Elem()
+		}
+
+		if valueType.Kind() == reflect.Ptr {
+			value = reflect.New(valueType.Elem()).Elem()
+		}
+
+		if key.Kind() == reflect.Ptr {
+			key = key.Elem()
+		}
 
 		switch keyTid {
 		case String:
@@ -190,8 +225,28 @@ func decodeMap(data []byte, target any) (int, error) {
 			default:
 				return 0, fmt.Errorf("CompressSerializer: unsupported type %d", valueType.Kind())
 			}
+		case Struct:
+			n, err := decodeStruct(itemData, value.Addr().Interface())
+			if err != nil {
+				return 0, fmt.Errorf("CompressSerializer: %s", err)
+			}
+			itemData = itemData[n:]
+		case Slice:
+			n, err := decodeSlice(itemData, value.Addr().Interface())
+			if err != nil {
+				return 0, fmt.Errorf("CompressSerializer: %s", err)
+			}
+			itemData = itemData[n:]
 		default:
 			return 0, fmt.Errorf("CompressSerializer: unsupported type %d", valueTid)
+		}
+
+		if keyType.Kind() == reflect.Ptr {
+			key = key.Addr()
+		}
+
+		if valueType.Kind() == reflect.Ptr {
+			value = value.Addr()
 		}
 
 		v.SetMapIndex(key, value)

@@ -83,9 +83,7 @@ func encodeStruct(source any) ([]byte, error) {
 	}
 
 	size := len(ret)
-	if size > 0 {
-		ret = append(encodeVarint(uint64(size)), ret...)
-	}
+	ret = append(encodeVarint(uint64(size)), ret...)
 
 	return ret, nil
 

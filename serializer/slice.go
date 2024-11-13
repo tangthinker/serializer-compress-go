@@ -22,7 +22,7 @@ func encodeSlice(source any) ([]byte, error) {
 	}
 
 	if v.Len() == 0 {
-		return ret, nil
+		return encodeVarint(0), nil
 	}
 
 	itemType := v.Index(0).Type()
@@ -88,6 +88,11 @@ func decodeSlice(data []byte, target any) (int, error) {
 
 	dataSize, n := decodeVarint(data)
 	data = data[n:]
+
+	if dataSize == 0 {
+		return n, nil
+	}
+
 	data = data[:dataSize]
 
 	_, eleType := decodeHead(data[0])
@@ -104,7 +109,10 @@ func decodeSlice(data []byte, target any) (int, error) {
 
 	for i := 0; i < int(size); i++ {
 		item := v.Index(i)
-		if item.Kind() == reflect.Ptr {
+		itemType := item.Type()
+		if itemType.Kind() == reflect.Ptr {
+			newItem := reflect.New(itemType.Elem()).Elem()
+			item.Set(newItem.Addr())
 			item = item.Elem()
 		}
 		switch eleType {
